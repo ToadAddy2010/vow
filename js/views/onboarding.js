@@ -20,7 +20,7 @@ export function render(app) {
       <div class="ob-emblems">${[RANKS[0], RANKS[6], RANKS[12], RANKS[15]].map((r) => emblem(r, 64)).join('')}</div>
       <h1 class="ob-title">VOW</h1>
       <p class="ob-sub">Gute Gewohnheiten aufbauen. Schlechte killen. Jeden Tag XP verdienen, von Bronze bis Unreal.</p>
-      <p class="muted small">Alles bleibt auf deinem Gerät. Kein Account, kein Tracking, keine Werbung.</p>
+      <p class="muted small">Nur für dich. Mit deinem Konto auf Handy und Laptop gleich.</p>
     </div>
     <button class="btn primary full big" data-act="ob-next">Los geht's</button>
     <details class="install-tip">

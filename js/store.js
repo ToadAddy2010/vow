@@ -1,6 +1,4 @@
-// Speicher: alles liegt nur auf dem Handy (localStorage).
-const KEY = 'vow.v1';
-const OLD_KEY = 'lockin.v1'; // alter App-Name: vorhandene Daten werden übernommen
+// Speicher: hält den aktuellen Stand, cloud.js sichert ihn im Konto.
 
 export const pad = (n) => String(n).padStart(2, '0');
 
@@ -65,8 +63,7 @@ function migrate(s) {
 
 export function load() {
   try {
-    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(OLD_KEY);
-    state = raw ? migrate(JSON.parse(raw)) : defaultState();
+    state = window.__vowInitial ? migrate(window.__vowInitial) : defaultState();
   } catch (e) {
     state = defaultState();
   }
@@ -75,7 +72,7 @@ export function load() {
 
 export function save() {
   try {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    window.__vowCloud?.changed(state);
   } catch (e) {
     console.error('Speichern fehlgeschlagen', e);
   }
@@ -91,6 +88,10 @@ export function replaceState(newState) {
 export function resetAll() {
   state = defaultState();
   save();
+}
+
+export function applyRemote(newState) {
+  state = migrate(newState);
 }
 
 export function exportJSON() {

@@ -1,4 +1,4 @@
-import { load, S, save, todayKey, askPersist } from './store.js';
+import { load, S, save, todayKey, askPersist, applyRemote } from './store.js';
 import { onXP, award } from './xp.js';
 import { dailyStart, cleanMs } from './logic.js';
 import { esc, toast, xpFloat, rankOverlay, sheet, closeSheet, fmtSince } from './ui.js';
@@ -168,12 +168,17 @@ function checkDay() {
     renderKeep();
   }
 }
+async function syncNow() {
+  const remote = await window.__vowCloud?.refresh();
+  if (remote) applyRemote(remote);
+  checkDay();
+  renderKeep();
+}
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
-    checkDay();
-    renderKeep();
-  }
+  if (document.hidden) window.__vowCloud?.flush();
+  else syncNow();
 });
+window.addEventListener('online', syncNow);
 setInterval(checkDay, 60000);
 window.addEventListener('vow:changed', () => renderKeep());
 

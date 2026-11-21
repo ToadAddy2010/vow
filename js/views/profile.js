@@ -88,9 +88,15 @@ export function render() {
     <button class="btn primary full mt" data-act="profile-save">Speichern</button>
   </section>
 
+  ${window.__vowAccount ? `<h2 class="h2">Konto</h2>
+  <section class="card">
+    <p class="small muted">Angemeldet als <b>${esc(window.__vowAccount.email)}</b>. Deine Einträge sind auf allen deinen Geräten gleich.</p>
+    <button class="btn ghost full" data-act="logout">Abmelden</button>
+  </section>` : ''}
+
   <h2 class="h2">Backup</h2>
   <section class="card">
-    <p class="small muted">Deine Daten liegen nur auf diesem Gerät. Mach ab und zu ein Backup, z.B. in deine Dateien oder eine Cloud.</p>
+    <p class="small muted">Deine Einträge liegen in deinem Konto. Ein eigenes Backup schadet trotzdem nicht.</p>
     <button class="btn full" data-act="backup-export">⬇️ Backup speichern</button>
     <label class="btn ghost full mt file-btn">⬆️ Backup laden<input type="file" id="pImport" accept="application/json,.json" hidden></label>
   </section>
@@ -138,6 +144,11 @@ export function mount(root, app) {
 }
 
 export const actions = {
+  logout: async () => {
+    if (!(await confirmBox('Abmelden?', 'Deine Einträge bleiben in deinem Konto.', 'Abmelden'))) return;
+    const ok = await window.__vowAccount.logout();
+    if (!ok) toast('Noch nicht alles gespeichert. Geh online und versuch es nochmal.', 'bad');
+  },
   'profile-save': (el, app) => {
     const root = document.getElementById('view');
     const s = S();

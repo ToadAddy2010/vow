@@ -478,3 +478,20 @@ input[type='time'].inp { -webkit-appearance: none; appearance: none; }
 .legal p, .legal li { color: #c9c9d4; font-size: 15px; line-height: 1.55; }
 .legal ul { padding-left: 20px; }
 .legal-missing { padding: 12px 14px; border: 1px solid rgba(255, 77, 94, 0.5); border-radius: 12px; color: #ff8b96; background: rgba(255, 77, 94, 0.08); font-size: 14px; }
+
+/* ---------- Login & Sync ---------- */
+.v-login { padding-bottom: calc(var(--safe-b) + 24px); }
+.login { min-height: calc(100vh - 80px); max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; }
+.login .ob-title, .login-load .ob-title { text-align: center; }
+.login-sub { text-align: center; color: var(--muted); margin: 10px 0 14px; }
+.login .btn { margin-top: 18px; }
+.login-msg { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; font-size: 14px; color: #ff8b96; background: rgba(255, 77, 94, 0.1); border: 1px solid rgba(255, 77, 94, 0.4); }
+.login-msg.ok { color: var(--good); background: rgba(61, 220, 132, 0.1); border-color: rgba(61, 220, 132, 0.4); }
+.login-forgot { align-self: center; margin-top: 16px; padding: 8px; font-size: 14px; }
+.login-load { min-height: 70vh; display: grid; place-content: center; gap: 8px; text-align: center; }
+.sync-note {
+  position: fixed; z-index: 30; left: 16px; right: 16px; max-width: 528px; margin: 0 auto;
+  top: calc(var(--safe-t) + 8px);
+  padding: 8px 12px; border-radius: 10px; font-size: 13px;
+  background: #241a08; border: 1px solid var(--gold2); color: #ffe39a;
+}
