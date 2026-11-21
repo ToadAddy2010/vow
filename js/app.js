@@ -9,8 +9,9 @@ import * as mind from './views/mind.js';
 import * as coach from './views/coachview.js';
 import * as profile from './views/profile.js';
 import * as onboarding from './views/onboarding.js';
+import * as commit from './views/oath.js';
 
-const VIEWS = { today, habits, body, mind, coach, profile, onboarding };
+const VIEWS = { today, habits, body, mind, coach, profile, onboarding, commit };
 
 const NAV = [
   ['today', 'Heute', '<path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],
@@ -41,11 +42,12 @@ function render(scrollTop) {
   const nav = document.getElementById('nav');
   let v = app.view;
   if (!s.onboarded) v = 'onboarding';
+  else if (!s.commitment) v = 'commit';
   const y = window.scrollY;
   root.className = 'view v-' + v;
   root.innerHTML = VIEWS[v].render(app);
   VIEWS[v].mount && VIEWS[v].mount(root, app);
-  nav.hidden = v === 'onboarding';
+  nav.hidden = v === 'onboarding' || v === 'commit';
   nav.innerHTML = NAV.map(
     ([id, label, path]) =>
       `<button class="nav-b ${id === v ? 'on' : ''}" data-act="go" data-v="${id}:" aria-label="${label}">

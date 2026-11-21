@@ -47,6 +47,7 @@ export function defaultState() {
     affirmedOn: {}, // dateKey -> true
     chat: [], // {from:'coach'|'me', text, t}
     quoteShift: 0,
+    commitment: null, // {days (null = für immer), startKey}
     lastOpen: null,
   };
 }

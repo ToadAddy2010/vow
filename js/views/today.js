@@ -4,6 +4,7 @@ import { esc, emblem, ring, fmtSince, fmtDate } from '../ui.js';
 import { activeHabits, isDone, cleanMs, foodTotals, workoutMin, habitStreak } from '../logic.js';
 import { brief } from '../coach.js';
 import { quoteOfDay } from './mind.js';
+import { commitCard } from './oath.js';
 
 function greet() {
   const h = new Date().getHours();
@@ -48,6 +49,8 @@ export function render() {
     </div>
     <div class="xp-today ${xt < 0 ? 'neg' : ''}"><b>${xt >= 0 ? '+' : ''}${xt}</b><span>heute</span></div>
   </section>
+
+  ${commitCard()}
 
   <section class="card coach-card">
     <div class="coach-head"><span class="coach-dot"></span>Coach</div>

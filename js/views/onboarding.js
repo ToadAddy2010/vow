@@ -3,13 +3,14 @@ import { esc, toast, emblem } from '../ui.js';
 import { RANKS } from '../xp.js';
 import { HABIT_PRESETS, BAD_PRESETS } from '../data.js';
 import { addHabit, addBad, dailyStart } from '../logic.js';
+import { commitPicker, commitDays, openOath, setCommitment } from './oath.js';
 
 function ob(app) {
   if (!app.ui.ob) app.ui.ob = { step: 0, name: '', bad: new Set(), badCustom: [], good: new Set(), goodCustom: [], kcal: 2400, protein: 120, sleep: 8 };
   return app.ui.ob;
 }
 
-const STEPS = 5;
+const STEPS = 6;
 
 export function render(app) {
   const o = ob(app);
@@ -60,7 +61,9 @@ export function render(app) {
     <label class="lbl">Schlaf pro Nacht (Stunden)</label>
     <input class="inp big" id="obS" type="number" inputmode="decimal" step="0.5" value="${o.sleep}" min="5" max="12">
     <p class="small muted">Jugendliche brauchen meist 8 bis 10 Stunden, Erwachsene 7 bis 9.</p>
-    <button class="btn primary full big mt2" data-act="ob-finish">Ich schwöre.</button>`;
+    <button class="btn primary full big mt2" data-act="ob-next">Weiter</button>`;
+  } else if (o.step === 5) {
+    body = commitPicker('ob-commit');
   }
   return `<div class="ob">${o.step > 0 ? `<button class="back" data-act="ob-back">‹</button>` : ''}${dots}${body}</div>`;
 }
@@ -108,23 +111,28 @@ export const actions = {
     o[el.dataset.k] = o[el.dataset.k].filter((x) => x !== el.dataset.v);
     app.rerender();
   },
-  'ob-finish': (el, app) => {
-    readStep(app);
+  'ob-commit': (el, app) => {
     const o = ob(app);
-    const s = S();
-    s.profile.name = o.name;
-    s.profile.kcalGoal = Math.min(6000, Math.max(1500, Math.round(o.kcal)));
-    s.profile.proteinGoal = Math.min(400, Math.max(20, Math.round(o.protein)));
-    s.profile.sleepGoal = Math.min(12, Math.max(5, o.sleep));
-    s.profile.createdAt = Date.now();
-    for (const [n, i] of BAD_PRESETS) if (o.bad.has(n)) addBad(n, i);
-    for (const n of o.badCustom) addBad(n, '🔒');
-    for (const [n, i] of HABIT_PRESETS) if (o.good.has(n)) addHabit(n, i);
-    for (const n of o.goodCustom) addHabit(n, '✅');
-    s.onboarded = true;
-    save();
-    app.ui.ob = null;
-    dailyStart();
-    app.go('today');
+    const days = commitDays(el.dataset.v);
+    openOath(o.name, days, () => finishOnboarding(app, o, days));
   },
 };
+
+function finishOnboarding(app, o, days) {
+  const s = S();
+  s.profile.name = o.name;
+  s.profile.kcalGoal = Math.min(6000, Math.max(1500, Math.round(o.kcal)));
+  s.profile.proteinGoal = Math.min(400, Math.max(20, Math.round(o.protein)));
+  s.profile.sleepGoal = Math.min(12, Math.max(5, o.sleep));
+  s.profile.createdAt = Date.now();
+  for (const [n, i] of BAD_PRESETS) if (o.bad.has(n)) addBad(n, i);
+  for (const n of o.badCustom) addBad(n, '🔒');
+  for (const [n, i] of HABIT_PRESETS) if (o.good.has(n)) addHabit(n, i);
+  for (const n of o.goodCustom) addHabit(n, '✅');
+  setCommitment(days);
+  s.onboarded = true;
+  save();
+  app.ui.ob = null;
+  dailyStart();
+  app.go('today');
+}

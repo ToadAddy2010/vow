@@ -2,6 +2,7 @@ import { S, save, exportJSON, replaceState, resetAll, todayKey } from '../store.
 import { RANKS, rankFor } from '../xp.js';
 import { esc, emblem, toast, confirmBox, fmtTime, fmtDate } from '../ui.js';
 import { activeDays, activeHabits, habitBest, bestClean } from '../logic.js';
+import { commitSummary } from './oath.js';
 
 export function render() {
   const s = S();
@@ -73,6 +74,12 @@ export function render() {
         )
         .join('') || '<div class="empty">Noch nichts.</div>'
     }
+  </section>
+
+  <h2 class="h2">Dein Schwur</h2>
+  <section class="card">
+    <p class="small muted">${commitSummary()}</p>
+    <button class="btn ghost full" data-act="commit-change">Schwur ändern</button>
   </section>
 
   <h2 class="h2">Einstellungen</h2>
