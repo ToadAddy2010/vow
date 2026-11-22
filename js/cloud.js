@@ -44,11 +44,7 @@ function note(kind) {
 
 function readLocal() {
   try {
-    const saved = JSON.parse(localStorage.getItem(LOCAL) || 'null');
-    if (saved) return saved;
-    // Einträge aus der Version ohne Login übernehmen
-    const old = JSON.parse(localStorage.getItem('vow.v1') || localStorage.getItem('lockin.v1') || 'null');
-    return old ? { state: old, base: 0 } : null;
+    return JSON.parse(localStorage.getItem(LOCAL) || 'null');
   } catch (e) {
     return null;
   }

@@ -1,6 +1,6 @@
 // Offline-Modus: speichert die App-Dateien, damit Vow auch ohne Internet startet.
 // Bei jeder neuen Version VERSION hochzählen.
-const VERSION = 'vow-domain-v3';
+const VERSION = 'vow-domain-v4';
 const FILES = [
   './',
   './index.html',
