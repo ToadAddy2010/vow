@@ -10,8 +10,9 @@ import * as coach from './views/coachview.js';
 import * as profile from './views/profile.js';
 import * as onboarding from './views/onboarding.js';
 import * as commit from './views/oath.js';
+import * as account from './views/account.js';
 
-const VIEWS = { today, habits, body, mind, coach, profile, onboarding, commit };
+const VIEWS = { today, habits, body, mind, coach, profile, onboarding, commit, account };
 
 const NAV = [
   ['today', 'Heute', '<path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],
@@ -28,6 +29,7 @@ const app = {
     render(scrollTop);
   },
   go(v, tab) {
+    if (v === 'account' && app.view !== 'account') app.ui.accountFrom = app.view;
     if (v === 'body' && tab) app.ui.bodyTab = tab;
     if (v === 'mind' && tab) app.ui.mindTab = tab;
     closeSheet();
@@ -35,6 +37,22 @@ const app = {
     render(true);
   },
 };
+
+// Runder Konto-Knopf oben rechts auf allen Hauptseiten
+const ACCOUNT_BUTTON_VIEWS = new Set(['today', 'habits', 'body', 'mind', 'coach']);
+function addAccountButton(root, v) {
+  if (!window.__vowAccount || !ACCOUNT_BUTTON_VIEWS.has(v)) return;
+  const top = root.querySelector('.top');
+  if (!top) return;
+  const source = String(S().profile.name || window.__vowAccount.email || '?').trim();
+  const btn = document.createElement('button');
+  btn.className = 'account-btn';
+  btn.dataset.act = 'go';
+  btn.dataset.v = 'account:';
+  btn.setAttribute('aria-label', 'Konto öffnen');
+  btn.textContent = ([...source][0] || '?').toUpperCase();
+  top.appendChild(btn);
+}
 
 function render(scrollTop) {
   const s = S();
@@ -46,6 +64,7 @@ function render(scrollTop) {
   const y = window.scrollY;
   root.className = 'view v-' + v;
   root.innerHTML = VIEWS[v].render(app);
+  addAccountButton(root, v);
   VIEWS[v].mount && VIEWS[v].mount(root, app);
   nav.hidden = v === 'onboarding' || v === 'commit';
   nav.innerHTML = NAV.map(

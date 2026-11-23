@@ -98,7 +98,7 @@ export function render() {
   ${window.__vowAccount ? `<h2 class="h2">Konto</h2>
   <section class="card">
     <p class="small muted">Angemeldet als <b>${esc(window.__vowAccount.email)}</b>. Deine Einträge sind auf allen deinen Geräten gleich.</p>
-    <button class="btn ghost full" data-act="logout">Abmelden</button>
+    <button class="btn ghost full" data-act="go" data-v="account:">Konto öffnen</button>
   </section>` : ''}
 
   <h2 class="h2">Backup</h2>

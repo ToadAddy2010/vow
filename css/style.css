@@ -530,6 +530,29 @@ input[type='time'].inp { -webkit-appearance: none; appearance: none; }
 .login-msg.ok { color: var(--good); background: rgba(61, 220, 132, 0.1); border-color: rgba(61, 220, 132, 0.4); }
 .login-forgot { align-self: center; margin-top: 16px; padding: 8px; font-size: 14px; }
 .login-load { min-height: 70vh; display: grid; place-content: center; gap: 8px; text-align: center; }
+.account-btn {
+  flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%;
+  font-size: 17px; font-weight: 800; color: #120d00; background: linear-gradient(180deg, #ffd864, var(--gold2));
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px rgba(247, 201, 72, 0.45); transition: transform 0.1s;
+}
+.account-btn:active { transform: scale(0.94); }
+.account-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
+.top > :first-child { min-width: 0; }
+.account-head { display: flex; align-items: center; gap: 14px; margin: 4px 0 8px; }
+.account-avatar {
+  flex: none; width: 72px; height: 72px; display: grid; place-items: center; border-radius: 50%;
+  font-size: 30px; font-weight: 850; color: #120d00; background: linear-gradient(180deg, #ffd864, var(--gold2));
+}
+.account-name { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.account-mail { margin-top: 2px; overflow-wrap: anywhere; }
+.account-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px;
+  padding: 10px 16px; border-bottom: 1px solid var(--line); font-weight: 600; text-align: left;
+}
+.account-row:last-child { border-bottom: 0; }
+.account-row:active { background: var(--card2); }
+.account-row > :first-child { flex: none; }
+.account-val { min-width: 0; overflow: hidden; color: var(--muted); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
 .sync-note {
   position: fixed; z-index: 30; left: 16px; right: 16px; max-width: 528px; margin: 0 auto;
   top: calc(var(--safe-t) + 8px);

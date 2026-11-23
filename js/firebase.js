@@ -67,6 +67,17 @@ export function resetPassword(email) {
   return postAuth('sendOobCode', { requestType: 'PASSWORD_RESET', email });
 }
 
+export async function changePassword(email, current, next) {
+  await signIn(email, current);
+  const data = await postAuth('update', { idToken: session.idToken, password: next, returnSecureToken: true });
+  if (data.idToken) {
+    session.idToken = data.idToken;
+    session.refreshToken = data.refreshToken;
+    session.expiresAt = Date.now() + Number(data.expiresIn) * 1000;
+    keepSession();
+  }
+}
+
 async function renew() {
   let res;
   try {

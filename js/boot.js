@@ -1,5 +1,5 @@
 // Startet Vow: erst anmelden, dann eigene Daten laden
-import { configured, loadSession, signIn, resetPassword, collection, clearSession } from './firebase.js';
+import { configured, loadSession, signIn, resetPassword, changePassword, collection, clearSession } from './firebase.js';
 import { initCloud } from './cloud.js';
 
 const ERRORS = {
@@ -14,6 +14,7 @@ const ERRORS = {
 function errorText(e) {
   const code = String((e && e.message) || '');
   if (code.startsWith('TOO_MANY_ATTEMPTS')) return 'Zu viele Versuche. Warte ein paar Minuten.';
+  if (code.startsWith('WEAK_PASSWORD')) return 'Das neue Passwort ist zu schwach.';
   return ERRORS[code] || 'Das hat nicht geklappt. Versuch es gleich nochmal.';
 }
 
@@ -33,6 +34,16 @@ async function start(session) {
         clearSession();
         location.reload();
         return true;
+      },
+      // Gibt bei einem Fehler den Text zurück
+      async changePassword(current, next) {
+        try {
+          await changePassword(session.email, current, next);
+          return '';
+        } catch (e) {
+          if (/INVALID_LOGIN_CREDENTIALS|INVALID_PASSWORD/.test(String(e && e.message))) return 'Das aktuelle Passwort stimmt nicht.';
+          return errorText(e);
+        }
       },
     };
     await initCloud(collection(), storageKey);

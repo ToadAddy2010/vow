@@ -34,7 +34,6 @@ export function render() {
       <div class="kicker">${fmtDate(k)}</div>
       <h1 class="h1">${greet()}${s.profile.name ? ', ' + esc(s.profile.name) : ''}</h1>
     </div>
-    <button class="rank-chip" data-act="go" data-v="profile:" style="--rc:${r.color}">${emblem(r, 30)}<span>${esc(r.full)}</span></button>
   </header>
 
   <section class="card rank-card" style="--rc:${r.color}" data-act="go" data-v="profile:">
