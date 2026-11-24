@@ -1,7 +1,15 @@
 import { S, save, todayKey, keyToDate } from '../store.js';
 import { esc, segmented, toast, fmtDate, sheet, closeSheet, xpFloat } from '../ui.js';
-import { saveJournal, breathDone, affirm } from '../logic.js';
+import { saveJournal, saveJournalDraft, breathDone, affirm } from '../logic.js';
 import { QUOTES, AFFIRMATIONS, JOURNAL_PROMPTS, MOODS, BREATHING } from '../data.js';
+import { entryResponse, patterns, careState, aiPrompt, CRISIS_HELP } from '../insights.js';
+
+// Offener Tagebuch-Entwurf: wird auch beim Wechsel in eine andere App gesichert
+let persistDraft = null;
+let draftTimer = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && persistDraft) persistDraft();
+});
 
 function dayNum(k = todayKey()) {
   return Math.floor(keyToDate(k).getTime() / 86400000);
@@ -30,6 +38,7 @@ function todaysAffirmations() {
 }
 
 export function render(app) {
+  if (persistDraft) persistDraft();
   const tab = app.ui.mindTab || 'journal';
   return `
   <header class="top"><h1 class="h1">Geist</h1></header>
@@ -58,8 +67,12 @@ function journal(app) {
     <textarea class="inp ta" id="jText" rows="6" placeholder="Schreib einfach drauf los…">${esc(j.text || '')}</textarea>
     <label class="lbl">3 Dinge, für die du dankbar bist</label>
     ${[0, 1, 2].map((i) => `<input class="inp mb" id="jG${i}" maxlength="80" placeholder="${i + 1}." value="${esc(grat[i] || '')}">`).join('')}
-    <button class="btn primary full mt" data-act="journal-save">${j.t ? 'Aktualisieren' : 'Speichern'}</button>
+    <p class="small muted journal-status" id="jStatus" role="status">${j.t ? 'Automatisch gespeichert.' : 'Wird beim Schreiben automatisch gespeichert.'}</p>
+    <button class="btn primary full" data-act="journal-save">Fertig und auswerten</button>
   </section>
+
+  ${todayInsight(k)}
+  ${patternsBlock()}
 
   ${
     past.length
@@ -77,6 +90,129 @@ function journal(app) {
     .join('')}`
       : ''
   }`;
+}
+
+function insightActions(actions) {
+  if (!actions || !actions.length) return '';
+  return `<div class="msg-acts">${actions.map(([l, a, v]) => `<button class="chip accent" data-act="${a}" data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
+}
+
+function todayInsight(k) {
+  const r = entryResponse(k);
+  if (!r) return '';
+  return `<section class="card insight-card ${r.kind === 'normal' ? '' : 'care'}" id="jInsight">
+    <div class="coach-head"><span class="coach-dot"></span>Coach zu heute</div>
+    <h3 class="insight-title">${esc(r.title)}</h3>
+    <p class="pre insight-text">${esc(r.text)}</p>
+    ${insightActions(r.actions)}
+  </section>`;
+}
+
+function patternsBlock() {
+  const p = patterns();
+  const care = careState();
+  const lowCare = care && care.kind === 'low'
+    ? `<section class="card insight-card care">
+        <h3 class="insight-title">Die letzten Tage waren schwer</h3>
+        <p class="pre insight-text">${esc(CRISIS_HELP.split('\n\n').slice(2, 3).join(''))}</p>
+        <p class="small muted">Du musst da nicht alleine durch. Reden hilft, auch wenn es nur eine kurze Nachricht ist.</p>
+      </section>`
+    : '';
+  let body;
+  if (p.need) {
+    body = `<div class="insight-empty">Noch ${p.need} ${p.need === 1 ? 'Eintrag' : 'Einträge'}, dann erkennt Vow deine Muster.
+      <div class="insight-dots">${[0, 1, 2].map((i) => `<i class="${i < p.count ? 'on' : ''}"></i>`).join('')}</div></div>`;
+  } else if (!p.cards.length) {
+    body = '<div class="insight-empty">Noch kein klares Muster. Schreib weiter und trag deine Stimmung ein.</div>';
+  } else {
+    body = p.cards.map((c) => `<div class="insight-row"><span class="insight-ico" aria-hidden="true">${c.icon}</span><div class="grow"><b>${esc(c.title)}</b><p>${esc(c.text)}</p></div></div>`).join('');
+  }
+  return `${lowCare}
+  <div class="row between mt2"><h3 class="h3 m0">Was dein Tagebuch zeigt</h3><span class="small muted">letzte 30 Tage</span></div>
+  <section class="card list">${body}</section>
+  ${p.count ? '<button class="btn full" data-act="journal-ai">Mit echter KI auswerten</button>' : ''}
+  <p class="small muted insight-note">Die Auswertung läuft nur auf deinem Gerät und ist keine echte KI.</p>`;
+}
+
+function openAiSheet() {
+  const prompt = aiPrompt();
+  sheet(
+    `<h3 class="sheet-title">Mit echter KI auswerten</h3>
+     <p class="muted">Vow kopiert deine Tagebucheinträge der letzten 14 Tage, ohne Namen und E-Mail. Du fügst sie selbst bei Claude ein. Erst dann verlässt etwas die App.</p>
+     <details class="ai-preview" id="aiPreview"><summary>Das wird kopiert</summary><textarea class="inp ta" id="aiText" rows="8" readonly>${esc(prompt)}</textarea></details>
+     <button class="btn primary full mt" id="aiCopy">1. Text kopieren</button>
+     <a class="btn ghost full mt" href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">2. Claude öffnen und einfügen</a>
+     <p class="small good-t mt" id="aiMsg" role="status" hidden></p>`,
+    {
+      tall: true,
+      onMount: (b) => {
+        const msg = b.querySelector('#aiMsg');
+        const done = () => {
+          msg.textContent = 'Kopiert. Öffne Claude, tipp ins Textfeld und füg den Text ein.';
+          msg.hidden = false;
+        };
+        const fallback = () => {
+          b.querySelector('#aiPreview').open = true;
+          const area = b.querySelector('#aiText');
+          area.focus();
+          area.select();
+          area.setSelectionRange(0, area.value.length);
+          let ok = false;
+          try {
+            ok = document.execCommand('copy');
+          } catch (e) {}
+          if (ok) done();
+          else {
+            msg.textContent = 'Kopieren ging nicht automatisch. Markier den Text oben und kopier ihn selbst.';
+            msg.hidden = false;
+          }
+        };
+        b.querySelector('#aiCopy').onclick = () => {
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(prompt).then(done, fallback);
+          else fallback();
+        };
+      },
+    }
+  );
+}
+
+export function mount(root, app) {
+  persistDraft = null;
+  clearTimeout(draftTimer);
+  const text = root.querySelector('#jText');
+  if (!text) return;
+  const k = todayKey();
+  const status = root.querySelector('#jStatus');
+  const fields = [text, ...[0, 1, 2].map((i) => root.querySelector(`#jG${i}`))];
+  let dirty = false;
+  const persist = () => {
+    clearTimeout(draftTimer);
+    if (!dirty) return;
+    dirty = false;
+    const j = S().journal[k] || {};
+    saveJournalDraft(k, {
+      text: text.value,
+      grat: [0, 1, 2].map((i) => fields[i + 1].value.trim()),
+      mood: app.ui.mood ?? j.mood ?? 0,
+      prompt: j.prompt || promptOfDay(),
+    });
+    if (status.isConnected) status.textContent = 'Automatisch gespeichert.';
+  };
+  persistDraft = persist;
+  const schedule = () => {
+    dirty = true;
+    status.textContent = 'Wird gespeichert…';
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(persist, 700);
+  };
+  fields.forEach((el) => {
+    el.addEventListener('input', schedule);
+    el.addEventListener('blur', persist);
+  });
+  app.ui.journalDirty = () => {
+    dirty = true;
+    persist();
+  };
 }
 
 // ---------- Atmen ----------
@@ -208,12 +344,18 @@ function affirmView() {
 
 export const actions = {
   'mind-tab': (el, app) => {
+    if (persistDraft) persistDraft();
     app.ui.mindTab = el.dataset.v;
     app.rerender(true);
   },
   mood: (el, app) => {
     app.ui.mood = Number(el.dataset.v);
     document.querySelectorAll('.mood').forEach((m) => m.classList.toggle('on', m === el));
+    if (S().journal[todayKey()] && app.ui.journalDirty) app.ui.journalDirty();
+  },
+  'journal-ai': () => {
+    if (persistDraft) persistDraft();
+    openAiSheet();
   },
   'journal-save': (el, app) => {
     const root = document.getElementById('view');
@@ -223,10 +365,13 @@ export const actions = {
     const j = s.journal[todayKey()] || {};
     const mood = app.ui.mood ?? j.mood ?? 0;
     if (!text.trim() && !grat.some(Boolean)) return toast('Schreib erst etwas.');
+    clearTimeout(draftTimer);
     const ok = saveJournal(todayKey(), { text, grat, mood, prompt: j.prompt || promptOfDay() });
     app.ui.mood = null;
     toast(ok ? 'Gespeichert. Gut, dass du ehrlich zu dir bist.' : 'Gespeichert. Schreib etwas mehr für XP (20+ Zeichen).');
     app.rerender();
+    document.getElementById('jInsight')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return undefined;
   },
   'breath-start': (el) => {
     closeSheet();

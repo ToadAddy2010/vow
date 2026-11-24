@@ -265,6 +265,21 @@ export function saveJournal(k, entry) {
   return long;
 }
 
+// Speichert beim Tippen automatisch, XP gibt es erst beim Knopf „Speichern“
+export function saveJournalDraft(k, entry) {
+  const s = S();
+  const hasContent = (entry.text || '').trim() || (entry.grat || []).some((g) => g.trim());
+  if (!hasContent) {
+    if (!s.journal[k]) return false;
+    delete s.journal[k];
+    save();
+    return false;
+  }
+  s.journal[k] = { ...(s.journal[k] || {}), ...entry, t: Date.now() };
+  save();
+  return true;
+}
+
 export function breathDone(k = todayKey()) {
   const s = S();
   s.breath[k] = (s.breath[k] || 0) + 1;

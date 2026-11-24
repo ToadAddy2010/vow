@@ -2,6 +2,7 @@
 import { S, todayKey, addDays } from './store.js';
 import { rankFor, xpToday } from './xp.js';
 import { activeHabits, isDone, habitStreak, cleanDays, foodTotals, workoutMin, workoutStreak, hoursLeftToday } from './logic.js';
+import { safetyKind, careState, insightLine, patternsReport, CRISIS_HELP, EATING_HELP } from './insights.js';
 
 const pick = (arr, seed) => arr[Math.abs(seed) % arr.length];
 const seedNow = () => Math.floor(Date.now() / 60000);
@@ -66,6 +67,10 @@ export function brief() {
   const xpT = xpToday();
   const lines = [];
 
+  // Wenn das Tagebuch zeigt, dass es dir schlecht geht: kein Druck
+  const care = careState();
+  if (care) return { text: care.text, xpT, next: { text: care.next, go: 'mind', tab: care.tab } };
+
   // Rückfall heute?
   const relToday = s.bad.filter((b) => b.relapses.some((x) => todayKey(new Date(x.t)) === k));
   if (relToday.length) {
@@ -87,6 +92,9 @@ export function brief() {
   } else {
     lines.push(`Es ist spät. Der gefährlichste Teil des Tages. Handy weg, ab ins Bett.`);
   }
+
+  const fromJournal = insightLine();
+  if (fromJournal) lines.push(fromJournal);
 
   // stärkste Serie loben / warnen
   const bestBad = [...s.bad].sort((a, b) => cleanDays(b) - cleanDays(a))[0];
@@ -128,10 +136,6 @@ const RELAPSE = [
   `Du bist nicht deine Rückfälle. Aber du bist verantwortlich dafür, was als Nächstes passiert. Trag den Rückfall ehrlich ein, lern den Auslöser und hol dir die XP zurück.`,
 ];
 
-const CRISIS = `Das hier ist wichtiger als jede Serie und jeder Rang. Ich bin nur ein Programm und kann dir dabei nicht richtig helfen, aber echte Menschen können das.\n\nBist du gerade in Gefahr? Ruf die 112.\n\nKostenlos und anonym:\n• TelefonSeelsorge: 0800 111 0 111 (Tag und Nacht)\n• Nummer gegen Kummer: 116 111 (für Kinder und Jugendliche)\n\nSag bitte auch jemandem, dem du vertraust, was los ist. Am besten jetzt gleich.`;
-
-const EATING = `Das klingt ernst, und dabei geht es nicht um Disziplin. Bitte iss regelmäßig und lass Kalorien und Serien gerade links liegen.\n\nSprich mit jemandem, dem du vertraust, und mit einem Arzt oder einer Ärztin.\n\nKostenlos und anonym:\n• TelefonSeelsorge: 0800 111 0 111 (Tag und Nacht)\n• Nummer gegen Kummer: 116 111 (für Kinder und Jugendliche)`;
-
 export function reply(input) {
   const q = input.toLowerCase();
   const s = S();
@@ -139,10 +143,12 @@ export function reply(input) {
   const has = (...w) => w.some((x) => q.includes(x));
 
   // Zuerst: Krisen nie mit strengen Sprüchen beantworten
-  if (has('suizid', 'selbstmord', 'umbringen', 'nicht mehr leben', 'sterben will', 'will sterben', 'mich ritzen', 'ritze mich', 'selbstverletz', 'mir was antun', 'mir etwas antun') || /(^|\s)(will|kann)\s+nicht\s+mehr[\s.!?]*$/.test(q))
-    return { text: CRISIS, actions: [['Ruhe-Atmung', 'breath-start', 'calm']] };
-  if (has('essstörung', 'magersucht', 'bulimie', 'hungere', 'hungern', 'nichts mehr essen', 'nichts essen', 'erbrechen', 'kotzen', 'hasse meinen körper'))
-    return { text: EATING, actions: [['Ruhe-Atmung', 'breath-start', 'calm']] };
+  const safety = safetyKind(input);
+  if (safety === 'crisis') return { text: CRISIS_HELP, actions: [['Ruhe-Atmung', 'breath-start', 'calm']] };
+  if (safety === 'eating') return { text: EATING_HELP, actions: [['Ruhe-Atmung', 'breath-start', 'calm']] };
+
+  if (has('tagebuch', 'muster', 'analysier'))
+    return { text: patternsReport(), actions: [['Tagebuch öffnen', 'go', 'mind:journal']] };
 
   if (has('drang', 'urge', 'goon', 'porn', 'geil', 'versuchung', 'rückfall gefahr', 'will gleich', 'craving', 'lust auf'))
     return { text: pick(URGE, seedNow()), actions: [['Drang-Killer starten', 'breath-start', 'urge']] };
@@ -238,4 +244,4 @@ export function weekReport() {
   return parts.join('\n');
 }
 
-export const QUICK = ['Ich hab Drang', 'Keine Motivation', 'Ich hatte einen Rückfall', 'Was soll ich jetzt tun?', 'Wie läuft meine Woche?', 'Wie viele kcal hab ich noch?', 'Wie ist mein Schlaf?'];
+export const QUICK = ['Ich hab Drang', 'Keine Motivation', 'Was sagt mein Tagebuch?', 'Ich hatte einen Rückfall', 'Was soll ich jetzt tun?', 'Wie läuft meine Woche?', 'Wie viele kcal hab ich noch?', 'Wie ist mein Schlaf?'];
